@@ -1,5 +1,5 @@
 //
-//  NSBarButtonItem+Extension.swift
+//  NSStatusBarButton+Extension.swift
 //  vanillaClone
 //
 //  Created by Thanh Nguyen on 1/29/19.

@@ -26,9 +26,10 @@ class HyperlinkTextField: NSTextField {
     }
     
     override func mouseDown(with theEvent: NSEvent) {
-        if let localHref = URL(string: href) {
-            NSWorkspace.shared.open(localHref)
-        }
+        guard let url = URL(string: href),
+              let scheme = url.scheme,
+              ["https", "http", "mailto"].contains(scheme) else { return }
+        NSWorkspace.shared.open(url)
     }
 }
 

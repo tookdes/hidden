@@ -9,9 +9,7 @@
 import Cocoa
 
 extension NSStackView {
-    func removeAllSubViews() {
-        for view in self.views {
-            view.removeFromSuperview()
-        }
+    func removeAllArrangedViews() {
+        self.views.forEach { $0.removeFromSuperview() }
     }
 }

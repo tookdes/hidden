@@ -88,20 +88,22 @@ enum Preferences {
         get {
             UserDefaults.standard.bool(forKey: UserDefaults.Key.alwaysHiddenSectionEnabled)
         }
-        
+
         set {
             UserDefaults.standard.set(newValue, forKey: UserDefaults.Key.alwaysHiddenSectionEnabled)
-            NotificationCenter.default.post(Notification(name: .alwayHideToggle))
+            NotificationCenter.default.post(Notification(name: .alwaysHideToggle))
+            NotificationCenter.default.post(Notification(name: .prefsChanged))
         }
     }
-    
+
     static var useFullStatusBarOnExpandEnabled: Bool {
         get {
             UserDefaults.standard.bool(forKey: UserDefaults.Key.useFullStatusBarOnExpandEnabled)
         }
-        
+
         set {
             UserDefaults.standard.set(newValue, forKey: UserDefaults.Key.useFullStatusBarOnExpandEnabled)
+            NotificationCenter.default.post(Notification(name: .prefsChanged))
         }
     }
     

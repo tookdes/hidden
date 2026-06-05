@@ -12,9 +12,9 @@ enum SelectedSecond: Int {
        case fiveSeconds = 0
        case tenSeconds = 1
        case fifteenSeconds = 2
-       case thirdtySeconds = 3
-       case oneMinus = 4
-       
+       case thirtySeconds = 3
+       case oneMinute = 4
+
        func toSeconds() -> Double {
            switch self {
            case .fiveSeconds:
@@ -23,15 +23,17 @@ enum SelectedSecond: Int {
                return 10.0
            case .fifteenSeconds:
                return 15.0
-           case .thirdtySeconds:
+           case .thirtySeconds:
                return 30.0
-           case .oneMinus:
+           case .oneMinute:
                return 60.0
            }
        }
-       
-       static func secondToPossition(seconds: Double) -> Int {
+
+       static func secondToPosition(seconds: Double) -> Int {
            switch seconds {
+           case 5.0:
+               return 0
            case 10.0:
                return 1
            case 15.0:

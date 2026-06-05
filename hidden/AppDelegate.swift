@@ -12,13 +12,13 @@ import HotKey
 @NSApplicationMain
 
 class AppDelegate: NSObject, NSApplicationDelegate{
-    
-    var statusBarController = StatusBarController()
-    
+
+    lazy var statusBarController = StatusBarController()
+
     var hotKey: HotKey? {
         didSet {
             guard let hotKey = hotKey else { return }
-            
+
             hotKey.keyDownHandler = { [weak self] in
                 self?.statusBarController.expandCollapseIfNeeded()
             }
@@ -26,23 +26,24 @@ class AppDelegate: NSObject, NSApplicationDelegate{
     }
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
-        setupAutoStartApp()
         registerDefaultValues()
+        setupAutoStartApp()
+        _ = statusBarController // Force lazy init after defaults are registered
         setupHotKey()
         openPreferencesIfNeeded()
         detectLTRLang()
     }
-    
+
     func openPreferencesIfNeeded() {
         if Preferences.isShowPreference {
             Util.showPrefWindow()
         }
     }
-    
+
     func setupAutoStartApp() {
         Util.setUpAutoStart(isAutoStart: Preferences.isAutoStart)
     }
-    
+
     func registerDefaultValues() {
          UserDefaults.standard.register(defaults: [
             UserDefaults.Key.isAutoStart: false,
@@ -50,20 +51,21 @@ class AppDelegate: NSObject, NSApplicationDelegate{
             UserDefaults.Key.isAutoHide: true,
             UserDefaults.Key.numberOfSecondForAutoHide: 10.0,
             UserDefaults.Key.areSeparatorsHidden: false,
-            UserDefaults.Key.alwaysHiddenSectionEnabled: false
+            UserDefaults.Key.alwaysHiddenSectionEnabled: false,
+            UserDefaults.Key.useFullStatusBarOnExpandEnabled: false
          ])
     }
-    
+
     func setupHotKey() {
         guard let globalKey = Preferences.globalKey else {return}
         hotKey = HotKey(keyCombo: KeyCombo(carbonKeyCode: globalKey.keyCode, carbonModifiers: globalKey.carbonFlags))
     }
-    
+
     func detectLTRLang() {
         // Languages like Arabic uses right to left (RTL) writing direction,
         // so some behavier of the app needs to be changed in these cases
-        
+
         Constant.isUsingLTRLanguage = (NSApplication.shared.userInterfaceLayoutDirection == .leftToRight)
     }
-   
+
 }
