@@ -12,5 +12,5 @@ enum Constant {
     static let appName = "Hidden Bar"
     static let launcherAppId = "com.dwarvesv.LauncherApplication"
     
-    private(set) static var isUsingLTRLanguage = false
+    static var isUsingLTRLanguage = false
 }
