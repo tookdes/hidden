@@ -12,7 +12,7 @@ import Cocoa
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
 
-    private var hasLaunchedMainApp = false
+    private var mainAppPollingTimer: Timer?
 
     @objc func terminate() {
         NSApp.terminate(nil)
@@ -29,22 +29,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                                                                 name: Notification.Name("killLauncher"),
                                                                 object: mainAppIdentifier)
 
-            let path = Bundle.main.bundlePath as NSString
-            var components = path.pathComponents
-            guard components.count > 3 else {
-                NSLog("Hidden Bar Launcher: Bundle path too shallow to derive main app path (\(components.count) components)")
+            let launcherURL = Bundle.main.bundleURL
+            let mainAppURL = launcherURL
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+
+            guard mainAppURL.pathExtension == "app" else {
+                NSLog("Hidden Bar Launcher: Could not derive main app bundle from launcher path: \(launcherURL.path)")
                 self.terminate()
                 return
             }
-            components.removeLast(3)
-            components.append("MacOS")
-            let appName = "Hidden Bar"
-            components.append(appName) //main app name
-            let newPath = NSString.path(withComponents: components)
 
             if #available(macOS 10.15, *) {
                 let config = NSWorkspace.OpenConfiguration()
-                NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: newPath), configuration: config) { [weak self] _, error in
+                NSWorkspace.shared.openApplication(at: mainAppURL, configuration: config) { [weak self] _, error in
                     if let error = error {
                         NSLog("Hidden Bar Launcher: Failed to launch main app: \(error.localizedDescription)")
                     }
@@ -53,12 +53,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     }
                 }
             } else {
-                let success = NSWorkspace.shared.launchApplication(newPath)
+                let success = NSWorkspace.shared.launchApplication(mainAppURL.path)
                 if !success {
-                    NSLog("Hidden Bar Launcher: Failed to launch main app at path: \(newPath)")
+                    NSLog("Hidden Bar Launcher: Failed to launch main app at path: \(mainAppURL.path)")
                 }
                 // Poll for main app in case DistributedNotificationCenter doesn't work across sandbox
-                hasLaunchedMainApp = true
                 startPollingForMainApp(identifier: mainAppIdentifier)
             }
         }
@@ -68,16 +67,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func startPollingForMainApp(identifier: String) {
-        Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] timer in
+        mainAppPollingTimer?.invalidate()
+        mainAppPollingTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] timer in
             let isRunning = NSWorkspace.shared.runningApplications.contains { $0.bundleIdentifier == identifier }
             if isRunning {
                 timer.invalidate()
+                self?.mainAppPollingTimer = nil
                 self?.terminate()
             }
         }
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
+        mainAppPollingTimer?.invalidate()
         DistributedNotificationCenter.default().removeObserver(self)
     }
 

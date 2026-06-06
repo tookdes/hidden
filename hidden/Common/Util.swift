@@ -18,7 +18,7 @@ class Util {
         let isRunning = runningApps.contains { $0.bundleIdentifier == Constant.launcherAppId }
 
         if #available(macOS 13, *) {
-            let service = SMAppService.mainApp
+            let service = SMAppService.loginItem(identifier: Constant.launcherAppId)
             do {
                 if isAutoStart {
                     try service.register()

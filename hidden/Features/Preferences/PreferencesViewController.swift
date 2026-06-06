@@ -34,6 +34,8 @@ class PreferencesViewController: NSViewController {
     @IBOutlet weak var btnClear: NSButton!
     @IBOutlet weak var btnShortcut: NSButton!
 
+    private var tutorialArrowConstraints: [NSLayoutConstraint] = []
+
     public var listening = false {
         didSet {
             let isHighlight = listening
@@ -207,73 +209,55 @@ extension PreferencesViewController {
     func hideStatusBar() {
         lblAlwayHidden.isHidden = true
         arrowPointToAlwayHiddenImage.isHidden = true
-        statusBarStackView.removeAllArrangedViews()
         let imageWidth: CGFloat = 16
 
-
-        let images = ["ico_1","ico_2","ico_3","seprated", "ico_collapse","ico_4","ico_5","ico_6","ico_7"].compactMap { imageName -> NSImageView? in
-            guard let image = NSImage(named: imageName) else { return nil }
-            return NSImageView(image: image)
-        }
-
-
-        for image in images {
-            statusBarStackView.addArrangedSubview(image)
-            image.translatesAutoresizingMaskIntoConstraints = false
-            NSLayoutConstraint.activate([
-                image.widthAnchor.constraint(equalToConstant: imageWidth),
-                image.heightAnchor.constraint(equalToConstant: imageWidth)
-
-            ])
-            if #available(OSX 10.14, *) {
-                image.contentTintColor = .labelColor
-            } else {
-                // Fallback on earlier versions
-            }
-        }
-        let dateTimeLabel = NSTextField()
-        dateTimeLabel.stringValue = Date.dateString() + " " + Date.timeString()
-        dateTimeLabel.translatesAutoresizingMaskIntoConstraints = false
-        dateTimeLabel.isBezeled = false
-        dateTimeLabel.isEditable = false
-        dateTimeLabel.sizeToFit()
-        dateTimeLabel.backgroundColor = .clear
-        statusBarStackView.addArrangedSubview(dateTimeLabel)
-        NSLayoutConstraint.activate([dateTimeLabel.heightAnchor.constraint(equalToConstant: imageWidth)
+        let imageViews = addStatusBarTutorialImages(
+            ["ico_1","ico_2","ico_3","seprated", "ico_collapse","ico_4","ico_5","ico_6","ico_7"],
+            imageWidth: imageWidth
+        )
+        updateTutorialArrowConstraints([
+            arrowPointToHiddenImage.centerXAnchor.constraint(equalTo: imageViews["seprated"]?.centerXAnchor ?? statusBarStackView.centerXAnchor)
         ])
-
-        NSLayoutConstraint.activate([
-            arrowPointToHiddenImage.centerXAnchor.constraint(equalTo: statusBarStackView.arrangedSubviews[3].centerXAnchor)
-        ])
+        arrowPointToHiddenImage.isHidden = imageViews["seprated"] == nil
     }
 
     func alwayHideStatusBar() {
         lblAlwayHidden.isHidden = false
-        arrowPointToAlwayHiddenImage.isHidden = false
-        statusBarStackView.removeAllArrangedViews()
         let imageWidth: CGFloat = 16
 
+        let imageViews = addStatusBarTutorialImages(
+            ["ico_1","ico_2","ico_3","ico_4", "seprated_1","ico_5","ico_6","seprated", "ico_collapse","ico_7"],
+            imageWidth: imageWidth
+        )
+        updateTutorialArrowConstraints([
+            arrowPointToAlwayHiddenImage.centerXAnchor.constraint(equalTo: imageViews["seprated_1"]?.centerXAnchor ?? statusBarStackView.centerXAnchor),
+            arrowPointToHiddenImage.centerXAnchor.constraint(equalTo: imageViews["seprated"]?.centerXAnchor ?? statusBarStackView.centerXAnchor)
+        ])
+        arrowPointToAlwayHiddenImage.isHidden = imageViews["seprated_1"] == nil
+        arrowPointToHiddenImage.isHidden = imageViews["seprated"] == nil
+    }
 
-        let images = ["ico_1","ico_2","ico_3","ico_4", "seprated_1","ico_5","ico_6","seprated", "ico_collapse","ico_7"].compactMap { imageName -> NSImageView? in
-            guard let image = NSImage(named: imageName) else { return nil }
-            return NSImageView(image: image)
-        }
+    private func addStatusBarTutorialImages(_ imageNames: [String], imageWidth: CGFloat) -> [String: NSImageView] {
+        updateTutorialArrowConstraints([])
+        statusBarStackView.removeAllArrangedViews()
 
+        var imageViews: [String: NSImageView] = [:]
+        for imageName in imageNames {
+            guard let image = NSImage(named: imageName) else { continue }
 
-        for image in images {
-            statusBarStackView.addArrangedSubview(image)
-            image.translatesAutoresizingMaskIntoConstraints = false
+            let imageView = NSImageView(image: image)
+            statusBarStackView.addArrangedSubview(imageView)
+            imageView.translatesAutoresizingMaskIntoConstraints = false
             NSLayoutConstraint.activate([
-                image.widthAnchor.constraint(equalToConstant: imageWidth),
-                image.heightAnchor.constraint(equalToConstant: imageWidth)
-
+                imageView.widthAnchor.constraint(equalToConstant: imageWidth),
+                imageView.heightAnchor.constraint(equalToConstant: imageWidth)
             ])
             if #available(OSX 10.14, *) {
-                image.contentTintColor = .labelColor
-            } else {
-                // Fallback on earlier versions
+                imageView.contentTintColor = .labelColor
             }
+            imageViews[imageName] = imageView
         }
+
         let dateTimeLabel = NSTextField()
         dateTimeLabel.stringValue = Date.dateString() + " " + Date.timeString()
         dateTimeLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -282,15 +266,17 @@ extension PreferencesViewController {
         dateTimeLabel.sizeToFit()
         dateTimeLabel.backgroundColor = .clear
         statusBarStackView.addArrangedSubview(dateTimeLabel)
-        NSLayoutConstraint.activate([dateTimeLabel.heightAnchor.constraint(equalToConstant: imageWidth)
+        NSLayoutConstraint.activate([
+            dateTimeLabel.heightAnchor.constraint(equalToConstant: imageWidth)
         ])
 
-        NSLayoutConstraint.activate([
-            arrowPointToAlwayHiddenImage.centerXAnchor.constraint(equalTo: statusBarStackView.arrangedSubviews[4].centerXAnchor)
-        ])
-        NSLayoutConstraint.activate([
-            arrowPointToHiddenImage.centerXAnchor.constraint(equalTo: statusBarStackView.arrangedSubviews[7].centerXAnchor)
-        ])
+        return imageViews
+    }
+
+    private func updateTutorialArrowConstraints(_ constraints: [NSLayoutConstraint]) {
+        NSLayoutConstraint.deactivate(tutorialArrowConstraints)
+        tutorialArrowConstraints = constraints
+        NSLayoutConstraint.activate(tutorialArrowConstraints)
     }
 
     @IBAction func btnAlwayHiddenHelpPressed(_ sender: NSButton) {

@@ -62,6 +62,7 @@ class StatusBarController {
 
     private var isToggle = false
     private var collapseRetryCount = 0
+    private var collapseRetryWorkItem: DispatchWorkItem?
 
     //MARK: - Methods
     init() {
@@ -79,11 +80,16 @@ class StatusBarController {
 
     deinit {
         timer?.invalidate()
+        collapseRetryWorkItem?.cancel()
         NotificationCenter.default.removeObserver(self)
     }
 
     @objc private func handleScreenParametersChanged() {
         updateCollapsedLengths()
+        if isCollapsed {
+            btnSeparate.length = btnHiddenCollapseLength
+            btnAlwaysHidden?.length = Preferences.areSeparatorsHidden ? btnAlwaysHiddenEnableExpandCollapseLength : btnAlwaysHiddenLength
+        }
     }
 
     private func updateCollapsedLengths() {
@@ -173,7 +179,7 @@ class StatusBarController {
         if !self.isBtnSeparateValidPosition {
             if collapseRetryCount < 1 {
                 collapseRetryCount += 1
-                autoCollapseIfNeeded()
+                scheduleCollapseRetry()
                 return
             }
             // Retry exhausted — force collapse anyway
@@ -190,8 +196,20 @@ class StatusBarController {
             NSApp.deactivate()
         }
     }
+
+    private func scheduleCollapseRetry() {
+        collapseRetryWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.collapseMenuBar()
+        }
+        collapseRetryWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: workItem)
+    }
+
     private func expandMenubar() {
         guard self.isCollapsed else {return}
+        collapseRetryWorkItem?.cancel()
+        collapseRetryCount = 0
         collapsed = false
         btnSeparate.length = btnHiddenLength
         if let button = btnExpandCollapse.button {
@@ -286,7 +304,8 @@ extension StatusBarController {
             if let existing = self.btnAlwaysHidden {
                 NSStatusBar.system.removeStatusItem(existing)
             }
-            self.btnAlwaysHidden = NSStatusBar.system.statusItem(withLength: btnAlwaysHiddenLength)
+            let length = Preferences.areSeparatorsHidden ? btnAlwaysHiddenEnableExpandCollapseLength : btnAlwaysHiddenLength
+            self.btnAlwaysHidden = NSStatusBar.system.statusItem(withLength: length)
             if let button = btnAlwaysHidden?.button {
                 button.image = self.imgIconLine
                 button.appearsDisabled = true
@@ -297,6 +316,9 @@ extension StatusBarController {
                 NSStatusBar.system.removeStatusItem(existing)
             }
             self.btnAlwaysHidden = nil
+            if isCollapsed {
+                btnSeparate.length = btnHiddenCollapseLength
+            }
         }
     }
 }
