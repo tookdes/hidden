@@ -9,51 +9,55 @@
 import Cocoa
 
 class PreferencesWindowController: NSWindowController {
-    
+
     enum MenuSegment: Int {
         case general
         case about
     }
-    
+
     static let shared: PreferencesWindowController = {
-        let wc = NSStoryboard(name:"Main", bundle: nil).instantiateController(withIdentifier: "MainWindow") as! PreferencesWindowController
+        guard let wc = NSStoryboard(name:"Main", bundle: nil).instantiateController(withIdentifier: "MainWindow") as? PreferencesWindowController else {
+            fatalError("Could not instantiate PreferencesWindowController from storyboard with identifier 'MainWindow'")
+        }
         return wc
     }()
-    
+
     private var menuSegment: MenuSegment = .general {
         didSet {
             updateVC()
         }
     }
-    
+
     private let preferencesVC = PreferencesViewController.initWithStoryboard()
-    
+
     private let aboutVC = AboutViewController.initWithStoryboard()
-    
+
     override func windowDidLoad() {
         super.windowDidLoad()
         updateVC()
     }
-    
+
     override func keyDown(with event: NSEvent) {
-        super.keyDown(with: event)
         if let vc = self.contentViewController as? PreferencesViewController, vc.listening {
             vc.updateGlobalShortcut(event)
+        } else {
+            super.keyDown(with: event)
         }
     }
-    
+
     override func flagsChanged(with event: NSEvent) {
-        super.flagsChanged(with: event)
         if let vc = self.contentViewController as? PreferencesViewController, vc.listening {
             vc.updateModiferFlags(event)
+        } else {
+            super.flagsChanged(with: event)
         }
     }
-    
+
     @IBAction func switchSegment(_ sender: NSSegmentedControl) {
-        guard let segment = MenuSegment(rawValue: sender.indexOfSelectedItem) else {return}
+        guard let segment = MenuSegment(rawValue: sender.selectedSegment) else {return}
         menuSegment = segment
     }
-    
+
     private func updateVC() {
         switch menuSegment {
         case .general:
@@ -62,5 +66,5 @@ class PreferencesWindowController: NSWindowController {
             self.window?.contentViewController = aboutVC
         }
     }
-    
+
 }

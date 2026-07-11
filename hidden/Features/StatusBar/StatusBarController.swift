@@ -76,6 +76,15 @@ class StatusBarController {
     private var hoverMonitor: Any?
     private var hoverDwellTimer: Timer?
 
+    // Fork-unique: notch-aware popover listing off-screen status items, plus a
+    // single collapse retry when Cmd-drag rearranges icons mid-collapse.
+    private var notchPopover: NSPopover?
+    private var cachedNotchItems: [HiddenMenuBarItem]?
+    private var notchCacheTime: Date?
+    private let notchPopoverDelegate = NotchPopoverDelegate()
+    private var collapseRetryCount = 0
+    private var collapseRetryWorkItem: DispatchWorkItem?
+
     // True while the pointer sits in any screen's menubar band (the strip between
     // visibleFrame.maxY and frame.maxY, which is the menubar's exact height there).
     // On fullscreen spaces the menubar is hidden and the band collapses to ~zero,
@@ -106,6 +115,9 @@ class StatusBarController {
         restoreRemovedStatusItems()
         setupAlwayHideStatusBar()
         setupHoverToExpandIfEnabled()
+        notchPopoverDelegate.onClose = { [weak self] in
+            self?.notchPopover = nil
+        }
         NotificationCenter.default.addObserver(self, selector: #selector(handleScreenParametersChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
             self?.collapseMenuBar()
@@ -117,7 +129,10 @@ class StatusBarController {
     
     deinit {
         NotificationCenter.default.removeObserver(self)
+        timer?.invalidate()
         hoverDwellTimer?.invalidate()
+        notchPopover?.close()
+        collapseRetryWorkItem?.cancel()
         if let monitor = hoverMonitor {
             NSEvent.removeMonitor(monitor)
         }
@@ -141,6 +156,9 @@ class StatusBarController {
                 guard let self = self else { return }
                 self.hoverDwellTimer = nil
                 if self.isCollapsed && self.isMouseInMenuBar {
+                    if self.showNotchPopoverIfNeeded() {
+                        return
+                    }
                     self.expandMenubar()
                 }
             }
@@ -152,6 +170,7 @@ class StatusBarController {
         // display hot-plug leaves the separator at a stale length (PR #354).
         let wasCollapsed = isCollapsed
         updateCollapsedLengths()
+        invalidateNotchItemsCache()
         if wasCollapsed {
             btnSeparate.length = btnHiddenCollapseLength
             if Preferences.areSeparatorsHidden {
@@ -208,6 +227,9 @@ class StatusBarController {
             let isOptionKeyPressed = event.modifierFlags.contains(NSEvent.ModifierFlags.option)
 
             if event.type == NSEvent.EventType.leftMouseUp && !isOptionKeyPressed{
+                if showNotchPopoverIfNeeded() {
+                    return
+                }
                 self.expandCollapseIfNeeded()
             } else if event.type == NSEvent.EventType.rightMouseUp && !isOptionKeyPressed {
                 // Right-click opens the same context menu the separator has (#356),
@@ -263,10 +285,22 @@ class StatusBarController {
     }
     
     private func collapseMenuBar() {
-        guard self.isBtnSeparateValidPosition && !self.isCollapsed else {
-            autoCollapseIfNeeded()
+        guard !self.isCollapsed else {
             return
         }
+
+        invalidateNotchItemsCache()
+
+        // Allow one retry if position validation fails (e.g., user Cmd-dragged icons)
+        if !self.isBtnSeparateValidPosition {
+            if collapseRetryCount < 1 {
+                collapseRetryCount += 1
+                scheduleCollapseRetry()
+                return
+            }
+            // Retry exhausted — force collapse anyway so auto-hide cannot get stuck.
+        }
+        collapseRetryCount = 0
 
         btnSeparate.length = self.btnHiddenCollapseLength
         if let button = btnExpandCollapse.button {
@@ -278,23 +312,43 @@ class StatusBarController {
         }
         verifyHideMechanismIfNeeded()
     }
+
+    private func scheduleCollapseRetry() {
+        collapseRetryWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.collapseMenuBar()
+        }
+        collapseRetryWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: workItem)
+    }
     private func expandMenubar() {
         guard self.isCollapsed else {return}
+        notchPopover?.close()
+        invalidateNotchItemsCache()
+        collapseRetryWorkItem?.cancel()
+        collapseRetryCount = 0
         btnSeparate.length = btnHiddenLength
         if let button = btnExpandCollapse.button {
             button.image = Assets.collapseImage
         }
         autoCollapseIfNeeded()
-        
+
         if Preferences.useFullStatusBarOnExpandEnabled {
             NSApp.setActivationPolicy(.regular)
-            NSApp.activate(ignoringOtherApps: true)
-            
+            if #available(macOS 14, *) {
+                NSApp.activate()
+            } else {
+                NSApp.activate(ignoringOtherApps: true)
+            }
         }
     }
     
     private func autoCollapseIfNeeded() {
-        guard Preferences.isAutoHide else {return}
+        guard Preferences.isAutoHide else {
+            timer?.invalidate()
+            timer = nil
+            return
+        }
         guard !isCollapsed else { return }
 
         startTimerToAutoHide()
@@ -381,6 +435,203 @@ class StatusBarController {
     
     @objc func toggleAutoHide() {
         Preferences.isAutoHide.toggle()
+    }
+}
+
+// MARK: - Notch popover (fork)
+extension StatusBarController {
+    private func showNotchPopoverIfNeeded() -> Bool {
+        guard isCollapsed, isMainScreenNotched() else { return false }
+        guard let button = btnExpandCollapse.button else { return false }
+
+        let hiddenItems = hiddenMenuBarItemsForNotchPopover()
+        guard !hiddenItems.isEmpty else { return false }
+
+        if notchPopover?.isShown == true {
+            notchPopover?.close()
+            return true
+        }
+
+        let controller = HiddenMenuBarItemsViewController(items: hiddenItems)
+        let popover = NSPopover()
+        popover.contentViewController = controller
+        popover.contentSize = controller.preferredContentSize
+        popover.behavior = .transient
+        popover.animates = true
+        popover.delegate = notchPopoverDelegate
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        notchPopover = popover
+        return true
+    }
+
+    private func isMainScreenNotched() -> Bool {
+        return (NSScreen.main?.safeAreaInsets.top ?? 0) >= 24
+    }
+
+    private func hiddenMenuBarItemsForNotchPopover() -> [HiddenMenuBarItem] {
+        if let cachedNotchItems = cachedNotchItems,
+           let notchCacheTime = notchCacheTime,
+           Date().timeIntervalSince(notchCacheTime) < 0.5 {
+            return cachedNotchItems
+        }
+
+        guard let screen = NSScreen.main else { return [] }
+        // Hidden status item windows are usually marked off-screen after the
+        // separator pushes them past the display edge, so .optionOnScreenOnly
+        // misses the items this popover needs to list.
+        let options: CGWindowListOption = [.optionAll]
+        guard let windowInfoList = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[CFString: Any]] else {
+            return []
+        }
+
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        let statusWindowLevel = CGWindowLevelForKey(.statusWindow)
+        let screenFrame = screen.frame
+        let menuBarHeight = max(NSStatusBar.system.thickness, screenFrame.height - screen.visibleFrame.height)
+        let menuBarMinY = screenFrame.maxY - menuBarHeight - 4
+        let menuBarMaxY = screenFrame.maxY + 2
+
+        var seenPIDs = Set<pid_t>()
+        let items = windowInfoList.compactMap { info -> HiddenMenuBarItem? in
+            guard let ownerPID = info[kCGWindowOwnerPID] as? pid_t, ownerPID != ownPID else { return nil }
+            guard !seenPIDs.contains(ownerPID) else { return nil }
+            guard let layer = info[kCGWindowLayer] as? Int, CGWindowLevel(Int32(layer)) == statusWindowLevel else { return nil }
+            guard let boundsDictionary = info[kCGWindowBounds] as? NSDictionary,
+                  let bounds = CGRect(dictionaryRepresentation: boundsDictionary)
+            else { return nil }
+            guard isOutsideScreenHorizontally(bounds, screenFrame: screenFrame) else { return nil }
+            guard bounds.height > 0, bounds.height <= menuBarHeight + 4 else { return nil }
+            // CGWindow bounds use top-left origin; menubar sits near the top edge.
+            guard bounds.midY >= menuBarMinY, bounds.midY <= menuBarMaxY else { return nil }
+
+            guard let app = NSRunningApplication(processIdentifier: ownerPID) else { return nil }
+            seenPIDs.insert(ownerPID)
+
+            let name = app.localizedName ?? info[kCGWindowOwnerName] as? String ?? "Menu Bar Item".localized
+            return HiddenMenuBarItem(name: name, icon: app.icon)
+        }
+
+        cachedNotchItems = items
+        notchCacheTime = Date()
+        return items
+    }
+
+    private func isOutsideScreenHorizontally(_ bounds: CGRect, screenFrame: CGRect) -> Bool {
+        return bounds.maxX <= screenFrame.minX || bounds.minX >= screenFrame.maxX
+    }
+
+    private func invalidateNotchItemsCache() {
+        cachedNotchItems = nil
+        notchCacheTime = nil
+    }
+}
+
+private struct HiddenMenuBarItem {
+    let name: String
+    let icon: NSImage?
+}
+
+private final class NotchPopoverDelegate: NSObject, NSPopoverDelegate {
+    var onClose: (() -> Void)?
+
+    func popoverDidClose(_ notification: Notification) {
+        onClose?()
+    }
+}
+
+private final class HiddenMenuBarItemsViewController: NSViewController {
+    private let items: [HiddenMenuBarItem]
+
+    init(items: [HiddenMenuBarItem]) {
+        self.items = items
+        super.init(nibName: nil, bundle: nil)
+        preferredContentSize = CGSize(width: 260, height: min(CGFloat(items.count) * 34 + 42, 282))
+    }
+
+    required init?(coder: NSCoder) {
+        return nil
+    }
+
+    override func loadView() {
+        let scrollView = NSScrollView()
+        scrollView.hasVerticalScroller = items.count > 7
+        scrollView.drawsBackground = false
+        scrollView.borderType = .noBorder
+
+        let contentSize = CGSize(width: 260, height: CGFloat(items.count) * 34 + 42)
+        let contentView = NSView(frame: NSRect(origin: .zero, size: contentSize))
+
+        let stackView = NSStackView()
+        stackView.orientation = .vertical
+        stackView.alignment = .leading
+        stackView.spacing = 0
+        stackView.edgeInsets = NSEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+
+        for item in items {
+            stackView.addArrangedSubview(HiddenMenuBarItemRow(item: item))
+        }
+        stackView.addArrangedSubview(makeHintTextField())
+
+        contentView.addSubview(stackView)
+        NSLayoutConstraint.activate([
+            stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            stackView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+        ])
+
+        scrollView.documentView = contentView
+        view = scrollView
+    }
+
+    private func makeHintTextField() -> NSTextField {
+        let hint = NSTextField(labelWithString: "Click the arrow to expand".localized)
+        hint.font = NSFont.systemFont(ofSize: 11)
+        hint.textColor = .secondaryLabelColor
+        hint.lineBreakMode = .byTruncatingTail
+        hint.translatesAutoresizingMaskIntoConstraints = false
+        hint.heightAnchor.constraint(equalToConstant: 22).isActive = true
+        return hint
+    }
+}
+
+private final class HiddenMenuBarItemRow: NSView {
+    init(item: HiddenMenuBarItem) {
+        super.init(frame: .zero)
+
+        let imageView = NSImageView()
+        imageView.image = item.icon
+        imageView.imageScaling = .scaleProportionallyDown
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+
+        let textField = NSTextField(labelWithString: item.name)
+        textField.lineBreakMode = .byTruncatingTail
+        textField.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        textField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        textField.translatesAutoresizingMaskIntoConstraints = false
+
+        let stackView = NSStackView(views: [imageView, textField])
+        stackView.orientation = .horizontal
+        stackView.alignment = .centerY
+        stackView.spacing = 8
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(stackView)
+
+        NSLayoutConstraint.activate([
+            imageView.widthAnchor.constraint(equalToConstant: 20),
+            imageView.heightAnchor.constraint(equalToConstant: 20),
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            stackView.topAnchor.constraint(equalTo: topAnchor, constant: 5),
+            stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -5),
+            heightAnchor.constraint(equalToConstant: 34),
+            widthAnchor.constraint(greaterThanOrEqualToConstant: 220)
+        ])
+    }
+
+    required init?(coder: NSCoder) {
+        return nil
     }
 }
 

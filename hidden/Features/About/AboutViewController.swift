@@ -13,7 +13,9 @@ class AboutViewController: NSViewController {
     @IBOutlet weak var lblVersion: NSTextField!
     
     static func initWithStoryboard() -> AboutViewController {
-        let vc = NSStoryboard(name:"Main", bundle: nil).instantiateController(withIdentifier: "aboutVC") as! AboutViewController
+        guard let vc = NSStoryboard(name:"Main", bundle: nil).instantiateController(withIdentifier: "aboutVC") as? AboutViewController else {
+            fatalError("Could not instantiate AboutViewController from storyboard with identifier 'aboutVC'")
+        }
         return vc
     }
     

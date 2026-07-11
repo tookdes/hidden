@@ -109,9 +109,10 @@ enum Preferences {
         get {
             UserDefaults.standard.bool(forKey: UserDefaults.Key.useFullStatusBarOnExpandEnabled)
         }
-        
+
         set {
             UserDefaults.standard.set(newValue, forKey: UserDefaults.Key.useFullStatusBarOnExpandEnabled)
+            NotificationCenter.default.post(Notification(name: .prefsChanged))
         }
     }
     

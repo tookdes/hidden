@@ -21,3 +21,9 @@
  Koraci za prikazivanje uvijek skrivenih ikona:
  1. Pritisni desnom tipkom miša ponovo na ikonu „<” i ponovi radnju za uključivanje funkcije. Uživaj 😉!
 ";
+
+"Conflicting Menu Bar Manager Detected" = "Otkriven je konfliktni upravitelj trake izbornika";
+"The following menu bar manager is already running: %@. Running multiple menu bar managers at the same time can cause layout issues and unexpected behavior." = "Sljedeći upravitelj trake izbornika već je pokrenut: %@. Istovremeno pokretanje više upravitelja može uzrokovati probleme s rasporedom i neočekivano ponašanje.";
+"Continue" = "Nastavi";
+"Menu Bar Item" = "Stavka trake izbornika";
+"Click the arrow to expand" = "Kliknite strelicu za proširenje";

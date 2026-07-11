@@ -21,3 +21,9 @@ Steps to enable:
 Steps to view always hidden icons:
 1. You right-click on “<” icon again to view and repeat the action to enable the feature. Enjoy 😉!
 ";
+
+"Conflicting Menu Bar Manager Detected" = "Conflicting Menu Bar Manager Detected";
+"The following menu bar manager is already running: %@. Running multiple menu bar managers at the same time can cause layout issues and unexpected behavior." = "The following menu bar manager is already running: %@. Running multiple menu bar managers at the same time can cause layout issues and unexpected behavior.";
+"Continue" = "Continue";
+"Menu Bar Item" = "Menu Bar Item";
+"Click the arrow to expand" = "Click the arrow to expand";

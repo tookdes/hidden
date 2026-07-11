@@ -20,3 +20,9 @@
 3. 最後は「＞」を右クリックすると，半透明「｜」より左にあるアイコンが常に非表示される．
 （もう一回「＞」を右クリックすると，常に非表示されたアイコンが表示される）
 ";
+
+"Conflicting Menu Bar Manager Detected" = "競合するメニューバー管理アプリを検出";
+"The following menu bar manager is already running: %@. Running multiple menu bar managers at the same time can cause layout issues and unexpected behavior." = "次のメニューバー管理アプリがすでに実行中です: %@. 複数のメニューバー管理アプリを同時に実行すると、レイアウトの問題や予期しない動作が発生する可能性があります。";
+"Continue" = "続行";
+"Menu Bar Item" = "メニューバー項目";
+"Click the arrow to expand" = "矢印をクリックして展開";

@@ -21,3 +21,9 @@ Các bước thực hiện:
 Để hiện lại những icon luôn ẩn:
 1. Click phải vào nút “<” 😉!
 ";
+
+"Conflicting Menu Bar Manager Detected" = "Phát hiện trình quản lý thanh menu xung đột";
+"The following menu bar manager is already running: %@. Running multiple menu bar managers at the same time can cause layout issues and unexpected behavior." = "Trình quản lý thanh menu sau đang chạy: %@. Chạy nhiều trình quản lý cùng lúc có thể gây lỗi bố cục và hành vi bất thường.";
+"Continue" = "Tiếp tục";
+"Menu Bar Item" = "Mục thanh menu";
+"Click the arrow to expand" = "Nhấp vào mũi tên để mở rộng";

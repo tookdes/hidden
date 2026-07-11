@@ -62,7 +62,9 @@ class PreferencesViewController: NSViewController {
     }
 
     static func initWithStoryboard() -> PreferencesViewController {
-        let vc = NSStoryboard(name:"Main", bundle: nil).instantiateController(withIdentifier: "prefVC") as! PreferencesViewController
+        guard let vc = NSStoryboard(name:"Main", bundle: nil).instantiateController(withIdentifier: "prefVC") as? PreferencesViewController else {
+            fatalError("Could not instantiate PreferencesViewController from storyboard with identifier 'prefVC'")
+        }
         return vc
     }
     

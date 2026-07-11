@@ -23,3 +23,9 @@
 （再次右键单击 “>” 按钮恢复显示 “持续隐藏区域” 中的图标。）
 祝您使用愉快 😉!
 ";
+
+"Conflicting Menu Bar Manager Detected" = "检测到冲突的菜单栏管理工具";
+"The following menu bar manager is already running: %@. Running multiple menu bar managers at the same time can cause layout issues and unexpected behavior." = "以下菜单栏管理工具已在运行：%@。同时运行多个菜单栏管理工具可能导致布局问题或异常行为。";
+"Continue" = "继续";
+"Menu Bar Item" = "菜单栏项目";
+"Click the arrow to expand" = "点击箭头展开";

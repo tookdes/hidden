@@ -34,6 +34,7 @@
 		92C97B9122018C1F0007559C /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C97B9022018C1F0007559C /* StatusBarController.swift */; };
 		967F4B2524169BC800F18D3C /* String+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 967F4B2424169BC800F18D3C /* String+Extension.swift */; };
 		967F4B2824169CAF00F18D3C /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967F4B2A24169CAF00F18D3C /* Localizable.strings */; };
+		D4A7E0022B6A4F5D9C000002 /* Hidden_Bar.icns in Resources */ = {isa = PBXBuildFile; fileRef = D4A7E0012B6A4F5D9C000001 /* Hidden_Bar.icns */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -82,6 +83,7 @@
 		B8404C9A24041A4300E6DBF8 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Main.strings; sourceTree = "<group>"; };
 		FF57A44B25E6C50200988FC2 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		FF8A0FB5265E10DB00C76226 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/Main.strings"; sourceTree = "<group>"; };
+		D4A7E0012B6A4F5D9C000001 /* Hidden_Bar.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = img/Hidden_Bar.icns; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -195,6 +197,7 @@
 				92C97B89220049B30007559C /* Views */,
 				929113F421F9D04100173149 /* AppDelegate.swift */,
 				929113F821F9D04200173149 /* Assets.xcassets */,
+				D4A7E0012B6A4F5D9C000001 /* Hidden_Bar.icns */,
 				929113FA21F9D04200173149 /* Main.storyboard */,
 				929113FD21F9D04200173149 /* Info.plist */,
 				967F4B2A24169CAF00F18D3C /* Localizable.strings */,
@@ -302,6 +305,7 @@
 				929113F921F9D04200173149 /* Assets.xcassets in Resources */,
 				967F4B2824169CAF00F18D3C /* Localizable.strings in Resources */,
 				929113FC21F9D04200173149 /* Main.storyboard in Resources */,
+				D4A7E0022B6A4F5D9C000002 /* Hidden_Bar.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

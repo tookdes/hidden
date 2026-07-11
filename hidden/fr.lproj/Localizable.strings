@@ -23,3 +23,9 @@ Utilisez la fonction de section toujours cachée pour garder vos icônes bien ra
 1. Vous cliquez à nouveau avec le bouton droit de la souris sur l'icône «view» pour afficher et répéter l'action pour activer la fonction. Profitez 😉! 
 ";
 "Disable Auto Collapse" = "Désactiver la réduction automatique";
+
+"Conflicting Menu Bar Manager Detected" = "Gestionnaire de barre de menus en conflit détecté";
+"The following menu bar manager is already running: %@. Running multiple menu bar managers at the same time can cause layout issues and unexpected behavior." = "Le gestionnaire de barre de menus suivant est déjà en cours d’exécution : %@. En exécuter plusieurs peut provoquer des problèmes de disposition et un comportement inattendu.";
+"Continue" = "Continuer";
+"Menu Bar Item" = "Élément de la barre de menus";
+"Click the arrow to expand" = "Cliquez sur la flèche pour développer";

@@ -22,3 +22,9 @@
 خطوات عرض الأيقونات المخفية دائما:
 أنقر بالزر الأيمن على أيقونة “<” ثاتية للعرض وكرر الإجراء لتمكين الميزة. استمتع 😉!
 ";
+
+"Conflicting Menu Bar Manager Detected" = "تم اكتشاف مدير شريط قوائم متعارض";
+"The following menu bar manager is already running: %@. Running multiple menu bar managers at the same time can cause layout issues and unexpected behavior." = "مدير شريط القوائم التالي قيد التشغيل بالفعل: %@. تشغيل عدة مديري شريط قوائم في الوقت نفسه قد يسبب مشاكل في التخطيط وسلوكًا غير متوقع.";
+"Continue" = "متابعة";
+"Menu Bar Item" = "عنصر شريط القوائم";
+"Click the arrow to expand" = "انقر على السهم للتوسيع";

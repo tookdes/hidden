@@ -21,3 +21,9 @@ Zum einschalten:
 Zum Anzeigen der permanent ausgeblendeten Symbole:
 1. Klicke mit der rechten Maustaste nochmals auf das Einklappen Symbol “<” um sie anzuzeigen und wiederhole den Schritt um die Funktion zu aktivieren. Viel Spaß 😉!
 ";
+
+"Conflicting Menu Bar Manager Detected" = "Konfliktierender Menüleisten-Manager erkannt";
+"The following menu bar manager is already running: %@. Running multiple menu bar managers at the same time can cause layout issues and unexpected behavior." = "Der folgende Menüleisten-Manager läuft bereits: %@. Mehrere gleichzeitig können Layoutprobleme und unerwartetes Verhalten verursachen.";
+"Continue" = "Weiter";
+"Menu Bar Item" = "Menüleisten-Element";
+"Click the arrow to expand" = "Zum Erweitern auf den Pfeil klicken";
